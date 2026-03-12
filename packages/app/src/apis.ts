@@ -8,12 +8,33 @@ import {
   configApiRef,
   createApiFactory,
   discoveryApiRef,
+  errorApiRef,
+  fetchApiRef,
+  identityApiRef,
   oauthRequestApiRef,
+  storageApiRef,
 } from '@backstage/core-plugin-api';
 import { OAuth2 } from '@backstage/core-app-api';
 import { rhAapAuthApiRef } from '@ansible/plugin-backstage-self-service';
+import { UserSettingsStorage } from '@backstage/plugin-user-settings';
 
 export const apis: AnyApiFactory[] = [
+  createApiFactory({
+    api: storageApiRef,
+    deps: {
+      fetchApi: fetchApiRef,
+      discoveryApi: discoveryApiRef,
+      errorApi: errorApiRef,
+      identityApi: identityApiRef,
+    },
+    factory: ({ fetchApi, discoveryApi, errorApi, identityApi }) =>
+      UserSettingsStorage.create({
+        fetchApi,
+        discoveryApi,
+        errorApi,
+        identityApi,
+      }),
+  }),
   createApiFactory({
     api: scmIntegrationsApiRef,
     deps: { configApi: configApiRef },
