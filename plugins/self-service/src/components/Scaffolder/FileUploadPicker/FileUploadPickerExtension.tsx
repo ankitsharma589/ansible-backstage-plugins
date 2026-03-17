@@ -107,6 +107,23 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+const safeSessionStorage = {
+  setItem: (key: string, value: string) => {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch {
+      /* Storage unavailable in this context */
+    }
+  },
+  removeItem: (key: string) => {
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      /* Storage unavailable in this context */
+    }
+  },
+};
+
 export const FileUploadPickerExtension = ({
   onChange,
   disabled,
@@ -136,11 +153,18 @@ export const FileUploadPickerExtension = ({
     schema?.['ui:buttonText'] ||
     'Upload File';
 
-  const fileInputId = `file-upload-input-${
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID().toString().replaceAll('-', '').substring(2, 11)
-      : Date.now().toString(36).substring(2, 11)
-  }`;
+  const fileInputId = (() => {
+    let suffix: string;
+    try {
+      suffix =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID().toString().replaceAll('-', '').substring(2, 11)
+          : Date.now().toString(36).substring(2, 11);
+    } catch {
+      suffix = Date.now().toString(36).substring(2, 11);
+    }
+    return `file-upload-input-${suffix}`;
+  })();
 
   const storageKey = `file-upload-filename-${schema?.title || 'default'}`;
 
@@ -153,7 +177,7 @@ export const FileUploadPickerExtension = ({
   const handleTextInput = (content: string) => {
     if (content) {
       setUploadedFile({ name: 'input-data', content });
-      sessionStorage.setItem(storageKey, 'input-data');
+      safeSessionStorage.setItem(storageKey, 'input-data');
       const dataUrl = `data:text/plain;base64,${btoa(content)}`;
       onChange(dataUrl);
     }
@@ -238,7 +262,7 @@ export const FileUploadPickerExtension = ({
 
     if (value.trim()) {
       setUploadedFile(null);
-      sessionStorage.removeItem(storageKey);
+      safeSessionStorage.removeItem(storageKey);
       handleTextInput(value);
     } else {
       onChange(undefined as any);
@@ -254,7 +278,7 @@ export const FileUploadPickerExtension = ({
         setUploadedFile({ name: file.name, content });
         setTextInput('');
         setIsDataSource('file');
-        sessionStorage.setItem(storageKey, file.name);
+        safeSessionStorage.setItem(storageKey, file.name);
         const dataUrl = `data:text/plain;base64,${btoa(content)}`;
         onChange(dataUrl);
       } catch (error) {
@@ -274,7 +298,7 @@ export const FileUploadPickerExtension = ({
     setIsDataSource('none');
     setTextInput('');
     onChange(undefined as any);
-    sessionStorage.removeItem(storageKey);
+    safeSessionStorage.removeItem(storageKey);
   };
 
   const isUploadDisabled = disabled || dataSource === 'input';
