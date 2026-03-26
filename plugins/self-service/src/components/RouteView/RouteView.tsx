@@ -12,6 +12,8 @@ import {
   executionEnvironmentsViewPermission,
   collectionsViewPermission,
   gitRepositoriesViewPermission,
+  templatesViewPermission,
+  historyViewPermission,
 } from '@ansible/backstage-rhaap-common/permissions';
 
 import { HomeComponent } from '../Home';
@@ -47,10 +49,21 @@ const RouteViewContent = () => {
   return (
     <>
       <Routes>
-        <Route path="catalog" element={<HomeComponent />} />
+        <Route
+          path="catalog"
+          element={
+            <RequirePermission permission={templatesViewPermission}>
+              <HomeComponent />
+            </RequirePermission>
+          }
+        />
         <Route
           path="catalog/:namespace/:templateName"
-          element={<CatalogItemsDetails />}
+          element={
+            <RequirePermission permission={templatesViewPermission}>
+              <CatalogItemsDetails />
+            </RequirePermission>
+          }
         />
         <Route
           path="catalog-import"
@@ -68,22 +81,26 @@ const RouteViewContent = () => {
           <Route
             path="tasks"
             element={
-              <RequirePermission
-                permission={taskReadPermission}
-                resourceRef="scaffolder-task"
-              >
-                <TaskList />
+              <RequirePermission permission={historyViewPermission}>
+                <RequirePermission
+                  permission={taskReadPermission}
+                  resourceRef="scaffolder-task"
+                >
+                  <TaskList />
+                </RequirePermission>
               </RequirePermission>
             }
           />
           <Route
             path="tasks/:taskId"
             element={
-              <RequirePermission
-                permission={taskReadPermission}
-                resourceRef="scaffolder-task"
-              >
-                <RunTask />
+              <RequirePermission permission={historyViewPermission}>
+                <RequirePermission
+                  permission={taskReadPermission}
+                  resourceRef="scaffolder-task"
+                >
+                  <RunTask />
+                </RequirePermission>
               </RequirePermission>
             }
           />
