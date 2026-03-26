@@ -142,3 +142,39 @@ export const GitRepositoriesSidebarItem = selfServicePlugin.provide(
     },
   }),
 );
+
+/**
+ * A sidebar item that checks Templates permissions before rendering.
+ * Returns null if the user doesn't have permission, hiding the sidebar entry.
+ *
+ * @public
+ */
+export const TemplatesSidebarItem = selfServicePlugin.provide(
+  createComponentExtension({
+    name: 'TemplatesSidebarItem',
+    component: {
+      lazy: () =>
+        import('./components/SidebarItems').then(
+          m => m.TemplatesSidebarItem
+        ),
+    },
+  }),
+);
+
+/**
+ * A sidebar item that checks History permissions before rendering.
+ * Returns null if the user doesn't have permission, hiding the sidebar entry.
+ *
+ * @public
+ */
+export const HistorySidebarItem = selfServicePlugin.provide(
+  createComponentExtension({
+    name: 'HistorySidebarItem',
+    component: {
+      lazy: () =>
+        import('./components/SidebarItems').then(
+          m => m.HistorySidebarItem
+        ),
+    },
+  }),
+);
