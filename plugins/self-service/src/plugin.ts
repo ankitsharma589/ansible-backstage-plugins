@@ -154,9 +154,7 @@ export const TemplatesSidebarItem = selfServicePlugin.provide(
     name: 'TemplatesSidebarItem',
     component: {
       lazy: () =>
-        import('./components/SidebarItems').then(
-          m => m.TemplatesSidebarItem
-        ),
+        import('./components/SidebarItems').then(m => m.TemplatesSidebarItem),
     },
   }),
 );
@@ -172,9 +170,7 @@ export const HistorySidebarItem = selfServicePlugin.provide(
     name: 'HistorySidebarItem',
     component: {
       lazy: () =>
-        import('./components/SidebarItems').then(
-          m => m.HistorySidebarItem
-        ),
+        import('./components/SidebarItems').then(m => m.HistorySidebarItem),
     },
   }),
 );
