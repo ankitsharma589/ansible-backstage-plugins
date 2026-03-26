@@ -89,11 +89,6 @@ export const Root = ({ children }: PropsWithChildren<{}>) => (
             to="ansible/overview"
             text="Ansible"
           />
-          {/* <SidebarItem
-            icon={AnsibleLogo}
-            to="self-service"
-            text="Self Service"
-          /> */}
           <SidebarItem
             icon={HomeIcon}
             to="/self-service/catalog"
