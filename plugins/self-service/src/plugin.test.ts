@@ -35,6 +35,8 @@ describe('self-service plugin module', () => {
   let CollectionsSidebarItem: any;
   let GitRepositoriesPage: any;
   let GitRepositoriesSidebarItem: any;
+  let TemplatesSidebarItem: any;
+  let HistorySidebarItem: any;
 
   beforeEach(() => {
     jest.resetModules();
@@ -69,6 +71,8 @@ describe('self-service plugin module', () => {
       CollectionsSidebarItem = mod.CollectionsSidebarItem;
       GitRepositoriesPage = mod.GitRepositoriesPage;
       GitRepositoriesSidebarItem = mod.GitRepositoriesSidebarItem;
+      TemplatesSidebarItem = mod.TemplatesSidebarItem;
+      HistorySidebarItem = mod.HistorySidebarItem;
     });
   });
   afterEach(() => {
@@ -138,7 +142,7 @@ describe('self-service plugin module', () => {
   });
 
   it('exports LocationListener as the value returned by createComponentExtension', () => {
-    expect(createComponentExtensionMock).toHaveBeenCalledTimes(4);
+    expect(createComponentExtensionMock).toHaveBeenCalledTimes(6);
     const created = createComponentExtensionMock.mock.results[0].value;
     expect(LocationListener).toBe(created);
     const calledWith = createComponentExtensionMock.mock.calls[0][0];
@@ -148,7 +152,7 @@ describe('self-service plugin module', () => {
   });
 
   it('exports EEBuilderSidebarItem as the value returned by createComponentExtension', () => {
-    expect(createComponentExtensionMock).toHaveBeenCalledTimes(4);
+    expect(createComponentExtensionMock).toHaveBeenCalledTimes(6);
     const created = createComponentExtensionMock.mock.results[1].value;
     expect(EEBuilderSidebarItem).toBe(created);
     const calledWith = createComponentExtensionMock.mock.calls[1][0];
@@ -158,7 +162,7 @@ describe('self-service plugin module', () => {
   });
 
   it('exports CollectionsSidebarItem as the value returned by createComponentExtension', () => {
-    expect(createComponentExtensionMock).toHaveBeenCalledTimes(4);
+    expect(createComponentExtensionMock).toHaveBeenCalledTimes(6);
     const created = createComponentExtensionMock.mock.results[2].value;
     expect(CollectionsSidebarItem).toBe(created);
     const calledWith = createComponentExtensionMock.mock.calls[2][0];
@@ -168,11 +172,31 @@ describe('self-service plugin module', () => {
   });
 
   it('exports GitRepositoriesSidebarItem as the value returned by createComponentExtension', () => {
-    expect(createComponentExtensionMock).toHaveBeenCalledTimes(4);
+    expect(createComponentExtensionMock).toHaveBeenCalledTimes(6);
     const created = createComponentExtensionMock.mock.results[3].value;
     expect(GitRepositoriesSidebarItem).toBe(created);
     const calledWith = createComponentExtensionMock.mock.calls[3][0];
     expect(calledWith).toHaveProperty('name', 'GitRepositoriesSidebarItem');
+    expect(calledWith.component).toHaveProperty('lazy');
+    expect(typeof calledWith.component.lazy).toBe('function');
+  });
+
+  it('exports TemplatesSidebarItem as the value returned by createComponentExtension', () => {
+    expect(createComponentExtensionMock).toHaveBeenCalledTimes(6);
+    const created = createComponentExtensionMock.mock.results[4].value;
+    expect(TemplatesSidebarItem).toBe(created);
+    const calledWith = createComponentExtensionMock.mock.calls[4][0];
+    expect(calledWith).toHaveProperty('name', 'TemplatesSidebarItem');
+    expect(calledWith.component).toHaveProperty('lazy');
+    expect(typeof calledWith.component.lazy).toBe('function');
+  });
+
+  it('exports HistorySidebarItem as the value returned by createComponentExtension', () => {
+    expect(createComponentExtensionMock).toHaveBeenCalledTimes(6);
+    const created = createComponentExtensionMock.mock.results[5].value;
+    expect(HistorySidebarItem).toBe(created);
+    const calledWith = createComponentExtensionMock.mock.calls[5][0];
+    expect(calledWith).toHaveProperty('name', 'HistorySidebarItem');
     expect(calledWith.component).toHaveProperty('lazy');
     expect(typeof calledWith.component.lazy).toBe('function');
   });
