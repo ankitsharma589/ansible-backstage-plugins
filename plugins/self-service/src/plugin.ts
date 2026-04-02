@@ -9,6 +9,8 @@ import {
   eeRouteRef,
   collectionsRouteRef,
   gitRepositoriesRouteRef,
+  templatesRouteRef,
+  historyRouteRef,
 } from './routes';
 import { AAPApis, AapAuthApi, EEBuildApis } from './apis';
 
@@ -20,6 +22,8 @@ export const selfServicePlugin = createPlugin({
     ee: eeRouteRef,
     collections: collectionsRouteRef,
     gitRepositories: gitRepositoriesRouteRef,
+    templates: templatesRouteRef,
+    history: historyRouteRef,
   },
 });
 
@@ -89,6 +93,36 @@ export const CollectionsPage = selfServicePlugin.provide(
         m => m.CollectionsRoutesPage,
       ),
     mountPoint: collectionsRouteRef,
+  }),
+);
+
+/**
+ * Templates page component for mounting at /self-service/catalog
+ * Contains routing for the Templates section.
+ *
+ * @public
+ */
+export const TemplatesPage = selfServicePlugin.provide(
+  createRoutableExtension({
+    name: 'TemplatesPage',
+    component: () =>
+      import('./components/Home').then(m => m.TemplatesRoutesPage),
+    mountPoint: templatesRouteRef,
+  }),
+);
+
+/**
+ * History page component for mounting at /self-service/create
+ * Contains routing for the History (task list and task detail) section.
+ *
+ * @public
+ */
+export const HistoryPage = selfServicePlugin.provide(
+  createRoutableExtension({
+    name: 'HistoryPage',
+    component: () =>
+      import('./components/History').then(m => m.HistoryRoutesPage),
+    mountPoint: historyRouteRef,
   }),
 );
 
