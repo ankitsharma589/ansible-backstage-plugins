@@ -76,7 +76,11 @@ const RouteViewContent = () => {
         <Route path="create">
           <Route
             path="templates/:namespace/:templateName"
-            element={<CreateTask />}
+            element={
+              <RequirePermission permission={templatesViewPermission}>
+                <CreateTask />
+              </RequirePermission>
+            }
           />
           <Route
             path="tasks"
