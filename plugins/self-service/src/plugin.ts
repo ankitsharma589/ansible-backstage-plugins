@@ -121,7 +121,7 @@ export const HistoryPage = selfServicePlugin.provide(
   createRoutableExtension({
     name: 'HistoryPage',
     component: () =>
-      import('./components/History').then(m => m.HistoryRoutesPage),
+      import('./components/TaskList').then(m => m.HistoryRoutesPage),
     mountPoint: historyRouteRef,
   }),
 );

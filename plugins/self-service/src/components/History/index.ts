@@ -1,1 +1,0 @@
-export { HistoryRoutesPage } from './HistoryRoutesPage';
