@@ -9,7 +9,7 @@ import {
   ScaffolderTask,
 } from '@backstage/plugin-scaffolder-react';
 import { TablePaginationActionsProps } from '@material-ui/core/TablePagination/TablePaginationActions';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Route, Routes, Navigate } from 'react-router-dom';
 import { Content, Header, Page } from '@backstage/core-components';
 import {
   Box,
@@ -35,8 +35,12 @@ import CheckCircleOutlineIcon from '@material-ui/icons/CheckCircleOutline';
 import PlayCircleOutlineIcon from '@material-ui/icons/PlayCircleOutline';
 import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
 import BlockIcon from '@material-ui/icons/Block';
+import { RequirePermission } from '@backstage/plugin-permission-react';
+import { taskReadPermission } from '@backstage/plugin-scaffolder-common/alpha';
+import { historyViewPermission } from '@ansible/backstage-rhaap-common/permissions';
 import { rootRouteRef } from '../../routes';
 import { useAsync } from 'react-use';
+import { RunTask } from '../RunTask';
 
 const headerStyles = makeStyles(theme => ({
   header_title_color: {
@@ -370,5 +374,42 @@ export const TaskList = () => {
         </Grid>
       </Content>
     </Page>
+  );
+};
+
+/**
+ * Standalone route wrapper used by the dynamic plugin mount at /self-service/create
+ * so detail URLs like /self-service/create/tasks/:taskId resolve correctly.
+ */
+export const HistoryRoutesPage = () => {
+  return (
+    <RequirePermission permission={historyViewPermission}>
+      <Routes>
+        <Route index element={<Navigate to="tasks" replace />} />
+        <Route
+          path="tasks"
+          element={
+            <RequirePermission
+              permission={taskReadPermission}
+              resourceRef="scaffolder-task"
+            >
+              <TaskList />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="tasks/:taskId"
+          element={
+            <RequirePermission
+              permission={taskReadPermission}
+              resourceRef="scaffolder-task"
+            >
+              <RunTask />
+            </RequirePermission>
+          }
+        />
+        <Route path="*" element={<Navigate to="tasks" replace />} />
+      </Routes>
+    </RequirePermission>
   );
 };
