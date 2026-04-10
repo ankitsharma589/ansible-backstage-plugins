@@ -1,2 +1,1 @@
-export { HomeComponent } from './Home';
-export { TemplatesRoutesPage } from './TemplatesRoutesPage';
+export { HomeComponent, TemplatesRoutesPage } from './Home';
