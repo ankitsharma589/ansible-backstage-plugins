@@ -38,6 +38,7 @@ import { SkeletonLoader } from './SkeletonLoader';
 import { scaffolderApiRef } from '@backstage/plugin-scaffolder-react';
 import { TagFilterPicker } from '../utils/TagFilterPicker';
 import { CatalogItemsDetails } from '../CatalogItemDetails';
+import { CreateTask } from '../CreateTask';
 
 const headerStyles = makeStyles(theme => ({
   header_title_color: {
@@ -420,19 +421,26 @@ export const HomeComponent = () => {
 };
 
 /**
- * Standalone route wrapper used by the dynamic plugin mount at /self-service/catalog
- * so detail URLs like /self-service/catalog/:namespace/:templateName resolve correctly.
+ * Standalone route wrapper used by the dynamic plugin mount at /self-service.
+ * Handles all routes gated by ansible.templates.view:
+ *   /self-service/catalog                                    — template catalog
+ *   /self-service/catalog/:namespace/:templateName            — template detail
+ *   /self-service/create/templates/:namespace/:templateName   — run template
  */
 export const TemplatesRoutesPage = () => {
   return (
     <RequirePermission permission={templatesViewPermission}>
       <Routes>
-        <Route index element={<HomeComponent />} />
+        <Route path="catalog" element={<HomeComponent />} />
         <Route
-          path=":namespace/:templateName"
+          path="catalog/:namespace/:templateName"
           element={<CatalogItemsDetails />}
         />
-        <Route path="*" element={<Navigate to="." replace />} />
+        <Route
+          path="create/templates/:namespace/:templateName"
+          element={<CreateTask />}
+        />
+        <Route path="*" element={<Navigate to="catalog" replace />} />
       </Routes>
     </RequirePermission>
   );

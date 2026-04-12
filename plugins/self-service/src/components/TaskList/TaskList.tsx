@@ -378,16 +378,15 @@ export const TaskList = () => {
 };
 
 /**
- * Standalone route wrapper used by the dynamic plugin mount at /self-service/create
+ * Standalone route wrapper used by the dynamic plugin mount at /self-service/create/tasks
  * so detail URLs like /self-service/create/tasks/:taskId resolve correctly.
  */
 export const HistoryRoutesPage = () => {
   return (
     <RequirePermission permission={historyViewPermission}>
       <Routes>
-        <Route index element={<Navigate to="tasks" replace />} />
         <Route
-          path="tasks"
+          index
           element={
             <RequirePermission
               permission={taskReadPermission}
@@ -398,7 +397,7 @@ export const HistoryRoutesPage = () => {
           }
         />
         <Route
-          path="tasks/:taskId"
+          path=":taskId"
           element={
             <RequirePermission
               permission={taskReadPermission}
@@ -408,7 +407,7 @@ export const HistoryRoutesPage = () => {
             </RequirePermission>
           }
         />
-        <Route path="*" element={<Navigate to="tasks" replace />} />
+        <Route path="*" element={<Navigate to="." replace />} />
       </Routes>
     </RequirePermission>
   );

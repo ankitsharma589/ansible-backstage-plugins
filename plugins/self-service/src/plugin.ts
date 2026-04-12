@@ -81,8 +81,9 @@ export const CollectionsPage = selfServicePlugin.provide(
 );
 
 /**
- * Templates page component for mounting at /self-service/catalog
- * Contains routing for the Templates section.
+ * Templates page component for mounting at /self-service
+ * Contains routing for all ansible.templates.view gated paths:
+ * catalog, catalog/:namespace/:templateName, and create/templates/:namespace/:templateName.
  *
  * @public
  */
@@ -96,7 +97,7 @@ export const TemplatesPage = selfServicePlugin.provide(
 );
 
 /**
- * History page component for mounting at /self-service/create
+ * History page component for mounting at /self-service/create/tasks
  * Contains routing for the History (task list and task detail) section.
  *
  * @public
