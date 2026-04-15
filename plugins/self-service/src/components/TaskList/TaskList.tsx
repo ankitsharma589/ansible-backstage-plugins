@@ -9,7 +9,13 @@ import {
   ScaffolderTask,
 } from '@backstage/plugin-scaffolder-react';
 import { TablePaginationActionsProps } from '@material-ui/core/TablePagination/TablePaginationActions';
-import { useNavigate, Route, Routes, Navigate } from 'react-router-dom';
+import {
+  useNavigate,
+  useParams,
+  Route,
+  Routes,
+  Navigate,
+} from 'react-router-dom';
 import { Content, Header, Page } from '@backstage/core-components';
 import {
   Box,
@@ -377,6 +383,16 @@ export const TaskList = () => {
   );
 };
 
+const TaskDetailsRoute = () => {
+  const { taskId } = useParams();
+
+  return taskId ? (
+    <RequirePermission permission={taskReadPermission} resourceRef={taskId}>
+      <RunTask />
+    </RequirePermission>
+  ) : null;
+};
+
 /**
  * Standalone route wrapper used by the dynamic plugin mount at /self-service/create/tasks
  * so detail URLs like /self-service/create/tasks/:taskId resolve correctly.
@@ -385,28 +401,8 @@ export const HistoryRoutesPage = () => {
   return (
     <RequirePermission permission={historyViewPermission}>
       <Routes>
-        <Route
-          index
-          element={
-            <RequirePermission
-              permission={taskReadPermission}
-              resourceRef="scaffolder-task"
-            >
-              <TaskList />
-            </RequirePermission>
-          }
-        />
-        <Route
-          path=":taskId"
-          element={
-            <RequirePermission
-              permission={taskReadPermission}
-              resourceRef="scaffolder-task"
-            >
-              <RunTask />
-            </RequirePermission>
-          }
-        />
+        <Route index element={<TaskList />} />
+        <Route path=":taskId" element={<TaskDetailsRoute />} />
         <Route path="*" element={<Navigate to="." replace />} />
       </Routes>
     </RequirePermission>

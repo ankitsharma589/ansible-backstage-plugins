@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Route, Routes, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Route, Routes, Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { RequirePermission } from '@backstage/plugin-permission-react';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 import { taskReadPermission } from '@backstage/plugin-scaffolder-common/alpha';
@@ -35,6 +35,16 @@ import {
   useNotifications,
   syncPollingService,
 } from '../notifications';
+
+const TaskDetailsRoute = () => {
+  const { taskId } = useParams();
+
+  return taskId ? (
+    <RequirePermission permission={taskReadPermission} resourceRef={taskId}>
+      <RunTask />
+    </RequirePermission>
+  ) : null;
+};
 
 const RouteViewContent = () => {
   const { notifications, removeNotification } = useNotifications();
@@ -87,12 +97,7 @@ const RouteViewContent = () => {
             path="tasks"
             element={
               <RequirePermission permission={historyViewPermission}>
-                <RequirePermission
-                  permission={taskReadPermission}
-                  resourceRef="scaffolder-task"
-                >
-                  <TaskList />
-                </RequirePermission>
+                <TaskList />
               </RequirePermission>
             }
           />
@@ -100,12 +105,7 @@ const RouteViewContent = () => {
             path="tasks/:taskId"
             element={
               <RequirePermission permission={historyViewPermission}>
-                <RequirePermission
-                  permission={taskReadPermission}
-                  resourceRef="scaffolder-task"
-                >
-                  <RunTask />
-                </RequirePermission>
+                <TaskDetailsRoute />
               </RequirePermission>
             }
           />
