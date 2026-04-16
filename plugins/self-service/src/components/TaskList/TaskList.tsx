@@ -9,13 +9,7 @@ import {
   ScaffolderTask,
 } from '@backstage/plugin-scaffolder-react';
 import { TablePaginationActionsProps } from '@material-ui/core/TablePagination/TablePaginationActions';
-import {
-  useNavigate,
-  useParams,
-  Route,
-  Routes,
-  Navigate,
-} from 'react-router-dom';
+import { useNavigate, Route, Routes, Navigate } from 'react-router-dom';
 import { Content, Header, Page } from '@backstage/core-components';
 import {
   Box,
@@ -42,7 +36,6 @@ import PlayCircleOutlineIcon from '@material-ui/icons/PlayCircleOutline';
 import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
 import BlockIcon from '@material-ui/icons/Block';
 import { RequirePermission } from '@backstage/plugin-permission-react';
-import { taskReadPermission } from '@backstage/plugin-scaffolder-common/alpha';
 import { historyViewPermission } from '@ansible/backstage-rhaap-common/permissions';
 import { rootRouteRef } from '../../routes';
 import { useAsync } from 'react-use';
@@ -383,16 +376,6 @@ export const TaskList = () => {
   );
 };
 
-const TaskDetailsRoute = () => {
-  const { taskId } = useParams();
-
-  return taskId ? (
-    <RequirePermission permission={taskReadPermission} resourceRef={taskId}>
-      <RunTask />
-    </RequirePermission>
-  ) : null;
-};
-
 /**
  * Standalone route wrapper used by the dynamic plugin mount at /self-service/create/tasks
  * so detail URLs like /self-service/create/tasks/:taskId resolve correctly.
@@ -402,7 +385,7 @@ export const HistoryRoutesPage = () => {
     <RequirePermission permission={historyViewPermission}>
       <Routes>
         <Route index element={<TaskList />} />
-        <Route path=":taskId" element={<TaskDetailsRoute />} />
+        <Route path=":taskId" element={<RunTask />} />
         <Route path="*" element={<Navigate to="." replace />} />
       </Routes>
     </RequirePermission>
