@@ -40,6 +40,11 @@ import { historyViewPermission } from '@ansible/backstage-rhaap-common/permissio
 import { rootRouteRef } from '../../routes';
 import { useAsync } from 'react-use';
 import { RunTask } from '../RunTask';
+import {
+  NotificationProvider,
+  NotificationStack,
+  useNotifications,
+} from '../notifications';
 
 const headerStyles = makeStyles(theme => ({
   header_title_color: {
@@ -376,6 +381,25 @@ export const TaskList = () => {
   );
 };
 
+// Inner content component that uses the notification context
+const HistoryRoutesContent = () => {
+  const { notifications, removeNotification } = useNotifications();
+
+  return (
+    <>
+      <Routes>
+        <Route index element={<TaskList />} />
+        <Route path=":taskId" element={<RunTask />} />
+        <Route path="*" element={<Navigate to="." replace />} />
+      </Routes>
+      <NotificationStack
+        notifications={notifications}
+        onClose={removeNotification}
+      />
+    </>
+  );
+};
+
 /**
  * Standalone route wrapper used by the dynamic plugin mount at /self-service/create/tasks
  * so detail URLs like /self-service/create/tasks/:taskId resolve correctly.
@@ -383,11 +407,9 @@ export const TaskList = () => {
 export const HistoryRoutesPage = () => {
   return (
     <RequirePermission permission={historyViewPermission}>
-      <Routes>
-        <Route index element={<TaskList />} />
-        <Route path=":taskId" element={<RunTask />} />
-        <Route path="*" element={<Navigate to="." replace />} />
-      </Routes>
+      <NotificationProvider>
+        <HistoryRoutesContent />
+      </NotificationProvider>
     </RequirePermission>
   );
 };

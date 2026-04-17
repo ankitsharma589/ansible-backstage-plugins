@@ -39,6 +39,11 @@ import { scaffolderApiRef } from '@backstage/plugin-scaffolder-react';
 import { TagFilterPicker } from '../utils/TagFilterPicker';
 import { CatalogItemsDetails } from '../CatalogItemDetails';
 import { CreateTask } from '../CreateTask';
+import {
+  NotificationProvider,
+  NotificationStack,
+  useNotifications,
+} from '../notifications';
 
 const headerStyles = makeStyles(theme => ({
   header_title_color: {
@@ -478,16 +483,12 @@ export const HomeComponent = () => {
   );
 };
 
-/**
- * Standalone route wrapper used by the dynamic plugin mount at /self-service.
- * Handles all routes gated by ansible.templates.view:
- *   /self-service/catalog                                    — template catalog
- *   /self-service/catalog/:namespace/:templateName            — template detail
- *   /self-service/create/templates/:namespace/:templateName   — run template
- */
-export const TemplatesRoutesPage = () => {
+// Inner content component that uses the notification context
+const TemplatesRoutesContent = () => {
+  const { notifications, removeNotification } = useNotifications();
+
   return (
-    <RequirePermission permission={templatesViewPermission}>
+    <>
       <Routes>
         <Route path="catalog" element={<HomeComponent />} />
         <Route
@@ -500,6 +501,27 @@ export const TemplatesRoutesPage = () => {
         />
         <Route path="*" element={<Navigate to="catalog" replace />} />
       </Routes>
+      <NotificationStack
+        notifications={notifications}
+        onClose={removeNotification}
+      />
+    </>
+  );
+};
+
+/**
+ * Standalone route wrapper used by the dynamic plugin mount at /self-service.
+ * Handles all routes gated by ansible.templates.view:
+ *   /self-service/catalog                                    — template catalog
+ *   /self-service/catalog/:namespace/:templateName            — template detail
+ *   /self-service/create/templates/:namespace/:templateName   — run template
+ */
+export const TemplatesRoutesPage = () => {
+  return (
+    <RequirePermission permission={templatesViewPermission}>
+      <NotificationProvider>
+        <TemplatesRoutesContent />
+      </NotificationProvider>
     </RequirePermission>
   );
 };
