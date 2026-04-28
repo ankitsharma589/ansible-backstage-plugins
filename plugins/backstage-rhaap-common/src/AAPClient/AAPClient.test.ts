@@ -481,6 +481,111 @@ describe('AAPClient', () => {
       });
     });
 
+    describe('checkControllerAvailability', () => {
+      it('should resolve when controller is present (count > 0)', async () => {
+        mockFetch.mockResolvedValue({
+          ok: true,
+          json: jest.fn().mockResolvedValue({ count: 1, results: [{}] }),
+        });
+
+        await expect(
+          client.checkControllerAvailability('test-token'),
+        ).resolves.toBeUndefined();
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'api/gateway/v1/services/?api_slug=controller',
+          ),
+          expect.any(Object),
+        );
+      });
+
+      it('should throw "Controller is absent in provided AAP Instance" when count is 0', async () => {
+        mockFetch.mockResolvedValue({
+          ok: true,
+          json: jest.fn().mockResolvedValue({ count: 0, results: [] }),
+        });
+
+        await expect(
+          client.checkControllerAvailability('test-token'),
+        ).rejects.toThrow('Controller is absent in provided AAP Instance');
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      it('should throw "Controller is not reachable in provided AAP Instance" after 4 retries on network errors', async () => {
+        jest.useRealTimers();
+        mockFetch.mockRejectedValue(new Error('Network error'));
+
+        const originalSetTimeout = globalThis.setTimeout;
+        globalThis.setTimeout = ((fn: () => void) =>
+          originalSetTimeout(fn, 0)) as any;
+
+        try {
+          await expect(
+            client.checkControllerAvailability('test-token'),
+          ).rejects.toThrow(
+            'Controller is not reachable in provided AAP Instance',
+          );
+          expect(mockFetch).toHaveBeenCalledTimes(4);
+        } finally {
+          globalThis.setTimeout = originalSetTimeout;
+          jest.useFakeTimers();
+        }
+      });
+
+      it('should retry on unexpected response shape and eventually fail', async () => {
+        mockFetch.mockResolvedValue({
+          ok: true,
+          json: jest.fn().mockResolvedValue({}),
+        });
+
+        await expect(
+          client.checkControllerAvailability('test-token'),
+        ).rejects.toThrow('Controller is absent in provided AAP Instance');
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      it('should succeed on retry after transient failure', async () => {
+        jest.useRealTimers();
+        mockFetch
+          .mockRejectedValueOnce(new Error('Network error'))
+          .mockRejectedValueOnce(new Error('Network error'))
+          .mockResolvedValueOnce({
+            ok: true,
+            json: jest.fn().mockResolvedValue({ count: 1, results: [{}] }),
+          });
+
+        const originalSetTimeout = globalThis.setTimeout;
+        globalThis.setTimeout = ((fn: () => void) =>
+          originalSetTimeout(fn, 0)) as any;
+
+        try {
+          await expect(
+            client.checkControllerAvailability('test-token'),
+          ).resolves.toBeUndefined();
+          expect(mockFetch).toHaveBeenCalledTimes(3);
+        } finally {
+          globalThis.setTimeout = originalSetTimeout;
+          jest.useFakeTimers();
+        }
+      });
+
+      it('should not retry when controller is definitively absent', async () => {
+        mockFetch.mockResolvedValue({
+          ok: true,
+          json: jest.fn().mockResolvedValue({ count: 0, results: [] }),
+        });
+
+        await expect(
+          client.checkControllerAvailability('test-token'),
+        ).rejects.toThrow('Controller is absent in provided AAP Instance');
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+    });
+
     describe('executeDeleteRequest', () => {
       it('should successfully execute a DELETE request', async () => {
         const mockResponse = {

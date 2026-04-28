@@ -1,4 +1,5 @@
 import { ConfigReader } from '@backstage/config';
+import { InputError, ServiceUnavailableError } from '@backstage/errors';
 import { handleAutocompleteRequest } from './autocomplete';
 import { mockAnsibleService } from '../actions/mockIAAPService';
 import { mockServices } from '@backstage/backend-test-utils';
@@ -41,6 +42,7 @@ describe('ansible-aap:autocomplete', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (global as any).fetch = mockFetch;
+    mockAnsibleService.checkControllerAvailability.mockResolvedValue(undefined);
     mockAuthService.getOwnServiceCredentials.mockResolvedValue({} as any);
     mockAuthService.getPluginRequestToken.mockResolvedValue({
       token: 'catalog-token',
@@ -369,5 +371,147 @@ describe('ansible-aap:autocomplete', () => {
       call[0]?.includes('Autocomplete context'),
     );
     expect(contextCalls.length).toBe(0);
+  });
+
+  it('should call checkControllerAvailability before getResourceData', async () => {
+    const callOrder: string[] = [];
+    mockAnsibleService.checkControllerAvailability.mockImplementation(
+      async () => {
+        callOrder.push('checkControllerAvailability');
+      },
+    );
+    mockAnsibleService.getResourceData.mockImplementation(async () => {
+      callOrder.push('getResourceData');
+      return { results: [] };
+    });
+
+    await handleAutocompleteRequest({
+      resource: 'job_templates',
+      token: 'token',
+      config,
+      logger,
+      ansibleService: mockAnsibleService,
+      auth: mockAuthService,
+      discovery: mockDiscoveryService,
+    });
+
+    expect(callOrder).toEqual([
+      'checkControllerAvailability',
+      'getResourceData',
+    ]);
+  });
+
+  it('should throw ServiceUnavailableError when Controller is absent in provided AAP Instance', async () => {
+    mockAnsibleService.checkControllerAvailability.mockRejectedValue(
+      new Error('Controller is absent in provided AAP Instance'),
+    );
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'job_templates',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow(ServiceUnavailableError);
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'job_templates',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow('Controller is absent in provided AAP Instance');
+
+    expect(mockAnsibleService.getResourceData).not.toHaveBeenCalled();
+  });
+
+  it('should throw ServiceUnavailableError when Controller is not reachable in provided AAP Instance', async () => {
+    mockAnsibleService.checkControllerAvailability.mockRejectedValue(
+      new Error('Controller is not reachable in provided AAP Instance'),
+    );
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'execution_environments',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow(ServiceUnavailableError);
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'execution_environments',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow('Controller is not reachable in provided AAP Instance');
+
+    expect(mockAnsibleService.getResourceData).not.toHaveBeenCalled();
+  });
+
+  it('should throw InputError when getResourceData fails', async () => {
+    mockAnsibleService.getResourceData.mockRejectedValue(
+      new Error('Failed to fetch data'),
+    );
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'organizations',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow(InputError);
+  });
+
+  it('should not call checkControllerAvailability for verbosity resource', async () => {
+    await handleAutocompleteRequest({
+      resource: 'verbosity',
+      token: 'token',
+      config,
+      logger,
+      ansibleService: mockAnsibleService,
+      auth: mockAuthService,
+      discovery: mockDiscoveryService,
+    });
+
+    expect(
+      mockAnsibleService.checkControllerAvailability,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should not call checkControllerAvailability for aaphostname resource', async () => {
+    await handleAutocompleteRequest({
+      resource: 'aaphostname',
+      token: 'token',
+      config,
+      logger,
+      ansibleService: mockAnsibleService,
+      auth: mockAuthService,
+      discovery: mockDiscoveryService,
+    });
+
+    expect(
+      mockAnsibleService.checkControllerAvailability,
+    ).not.toHaveBeenCalled();
   });
 });

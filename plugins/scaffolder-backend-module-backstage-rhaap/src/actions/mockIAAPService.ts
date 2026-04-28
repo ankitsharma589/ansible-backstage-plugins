@@ -33,4 +33,5 @@ export const mockAnsibleService: jest.Mocked<IAAPService> = {
   getUserInfoById: jest.fn(),
   isValidPAHRepository: jest.fn(),
   syncCollectionsByRepositories: jest.fn(),
+  checkControllerAvailability: jest.fn(),
 };

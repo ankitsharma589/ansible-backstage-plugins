@@ -5,6 +5,11 @@ import {
   LoggerService,
 } from '@backstage/backend-plugin-api';
 import {
+  InputError,
+  NotAllowedError,
+  ServiceUnavailableError,
+} from '@backstage/errors';
+import {
   IAAPService,
   getAnsibleConfig,
   getVerbosityLevels,
@@ -54,6 +59,25 @@ export async function handleAutocompleteRequest({
   }
 
   await ansibleService.setLogger(logger);
-  const data = await ansibleService.getResourceData(resource, token);
-  return { results: data.results };
+  try {
+    await ansibleService.checkControllerAvailability(token);
+    const data = await ansibleService.getResourceData(resource, token);
+    return { results: data.results };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to fetch data';
+
+    const isControllerError =
+      message.includes('Controller is absent') ||
+      message.includes('Controller is not reachable');
+    if (isControllerError) {
+      throw new ServiceUnavailableError(message);
+    }
+
+    if (message.includes('Insufficient privileges')) {
+      throw new NotAllowedError(message);
+    }
+
+    throw new InputError(message);
+  }
 }

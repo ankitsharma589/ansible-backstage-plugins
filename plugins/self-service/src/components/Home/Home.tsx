@@ -41,6 +41,7 @@ import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 import { SkeletonLoader } from './SkeletonLoader';
 import { scaffolderApiRef } from '@backstage/plugin-scaffolder-react';
 import { TagFilterPicker } from '../utils/TagFilterPicker';
+import { Alert } from '@material-ui/lab';
 import { CatalogItemsDetails } from '../CatalogItemDetails';
 import { CreateTask } from '../CreateTask';
 import {
@@ -208,6 +209,8 @@ export const HomeComponent = () => {
     { id: number; name: string }[]
   >([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [controllerWarning, setControllerWarning] = useState('');
+  const [controllerWarningOpen, setControllerWarningOpen] = useState(false);
   const [syncKey, setSyncKey] = useState(0);
   const [syncStatus, setSyncStatus] = useState<{
     orgsUsersTeams: { lastSync: string | null };
@@ -260,8 +263,23 @@ export const HomeComponent = () => {
       }
       return newTemplates;
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to fetch job templates:', error);
+      setJobTemplates([]);
+      const message =
+        (error as any)?.body?.error?.message ||
+        (error instanceof Error ? error.message : String(error));
+      if (
+        message.includes('Controller is absent in provided AAP Instance') ||
+        message.includes('Controller is not reachable in provided AAP Instance')
+      ) {
+        setControllerWarning(message);
+      } else {
+        setControllerWarning(
+          'Failed to load job templates from Automation Controller.',
+        );
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch job templates:', error);
+      }
+      setControllerWarningOpen(true);
       return undefined;
     } finally {
       if (requestId === fetchRequestIdRef.current) {
@@ -454,6 +472,19 @@ export const HomeComponent = () => {
           </Tooltip>
         )}
       </Header>
+      <Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        open={controllerWarningOpen}
+        onClose={(_event, reason) => {
+          if (reason === 'clickaway') return;
+          setControllerWarningOpen(false);
+        }}
+        style={{ zIndex: 10000, marginTop: '70px' }}
+      >
+        <Alert severity="error" onClose={() => setControllerWarningOpen(false)}>
+          {controllerWarning}
+        </Alert>
+      </Snackbar>
       <Content>
         <EntityListProvider key={syncKey}>
           <CatalogFilterLayout>

@@ -78,6 +78,7 @@ export interface IAAPService extends Pick<
   | 'getUserInfoById'
   | 'isValidPAHRepository'
   | 'syncCollectionsByRepositories'
+  | 'checkControllerAvailability'
 > {}
 
 export class AAPClient implements IAAPService {
@@ -850,6 +851,51 @@ export class AAPClient implements IAAPService {
     const endPoint = `api/controller/v2/${aapResource}/?${decodeURIComponent(urlSearchParams.toString())}`;
     const response = await this.executeGetRequest(endPoint, token);
     return await response.json();
+  }
+
+  public async checkControllerAvailability(token: string): Promise<void> {
+    const MAX_RETRIES = 4;
+    const BASE_DELAY_MS = 1000;
+    const endpoint = 'api/gateway/v1/services/?api_slug=controller';
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await this.executeGetRequest(endpoint, token);
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          throw new Error('Failed to parse response data as JSON');
+        }
+
+        if (data?.count > 0) {
+          return;
+        }
+
+        throw new Error('Controller is absent in provided AAP Instance');
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        if (errorMessage === 'Controller is absent in provided AAP Instance') {
+          throw error;
+        }
+
+        if (errorMessage.includes('Insufficient privileges')) {
+          throw error;
+        }
+
+        if (attempt === MAX_RETRIES) {
+          throw new Error(
+            `Controller is not reachable in provided AAP Instance. Reason: ${errorMessage}`,
+          );
+        }
+
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
 
   public async getJobTemplatesByName(
