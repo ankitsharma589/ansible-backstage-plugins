@@ -211,6 +211,7 @@ export class AAPClient implements IAAPService {
     endPoint: string,
     token: string | null,
     fullUrl?: string,
+    signal?: AbortSignal,
   ): Promise<any> {
     const baseUrl = this.getBaseUrl();
     let url: string;
@@ -232,11 +233,15 @@ export class AAPClient implements IAAPService {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
+      signal,
     };
     let response;
     try {
       response = await fetch(url, requestOptions);
     } catch (error) {
+      if (error?.name === 'AbortError') {
+        throw error;
+      }
       if (error instanceof Error) {
         throw new Error(`Failed to send fetch data: ${error.message}`);
       } else {
@@ -856,12 +861,24 @@ export class AAPClient implements IAAPService {
   public async checkControllerAvailability(token: string): Promise<void> {
     const MAX_RETRIES = 4;
     const BASE_DELAY_MS = 1000;
+    const ATTEMPT_TIMEOUT_MS = 5000;
     const endpoint = 'api/gateway/v1/services/?api_slug=controller';
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const abortController = new AbortController();
+      const timer = setTimeout(
+        () => abortController.abort(),
+        ATTEMPT_TIMEOUT_MS,
+      );
       try {
-        const response = await this.executeGetRequest(endpoint, token);
+        const response = await this.executeGetRequest(
+          endpoint,
+          token,
+          undefined,
+          abortController.signal,
+        );
         const data = await response.json();
+        clearTimeout(timer);
 
         if (data?.count > 0) {
           return;
@@ -869,8 +886,15 @@ export class AAPClient implements IAAPService {
 
         throw new Error('Controller is absent in provided AAP Instance');
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        clearTimeout(timer);
+        let errorMessage: string;
+        if (error?.name === 'AbortError') {
+          errorMessage = `Request timed out after ${ATTEMPT_TIMEOUT_MS}ms`;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = String(error);
+        }
 
         const isAbsent = errorMessage.includes(
           'Controller is absent in provided AAP Instance',

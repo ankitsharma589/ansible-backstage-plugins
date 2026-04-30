@@ -624,6 +624,68 @@ describe('AAPClient', () => {
           jest.useFakeTimers();
         }
       });
+
+      it('should retry when a single attempt times out', async () => {
+        jest.useRealTimers();
+        const abortError = new DOMException(
+          'The operation was aborted',
+          'AbortError',
+        );
+        mockFetch.mockRejectedValueOnce(abortError).mockResolvedValueOnce({
+          ok: true,
+          json: jest.fn().mockResolvedValue({ count: 1, results: [{}] }),
+        });
+
+        const originalSetTimeout = globalThis.setTimeout;
+        globalThis.setTimeout = ((fn: () => void) =>
+          originalSetTimeout(fn, 0)) as any;
+
+        try {
+          await expect(
+            client.checkControllerAvailability('test-token'),
+          ).resolves.toBeUndefined();
+
+          expect(mockFetch).toHaveBeenCalledTimes(2);
+          expect(mockLogger.warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+              'Controller availability check attempt 1/4 failed: Request timed out after 5000ms',
+            ),
+          );
+        } finally {
+          globalThis.setTimeout = originalSetTimeout;
+          jest.useFakeTimers();
+        }
+      });
+
+      it('should retry when a non-Error value is thrown', async () => {
+        jest.useRealTimers();
+        mockFetch
+          .mockRejectedValueOnce('plain string error')
+          .mockResolvedValueOnce({
+            ok: true,
+            json: jest.fn().mockResolvedValue({ count: 1, results: [{}] }),
+          });
+
+        const originalSetTimeout = globalThis.setTimeout;
+        globalThis.setTimeout = ((fn: () => void) =>
+          originalSetTimeout(fn, 0)) as any;
+
+        try {
+          await expect(
+            client.checkControllerAvailability('test-token'),
+          ).resolves.toBeUndefined();
+
+          expect(mockFetch).toHaveBeenCalledTimes(2);
+          expect(mockLogger.warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+              'Controller availability check attempt 1/4 failed: Failed to send fetch',
+            ),
+          );
+        } finally {
+          globalThis.setTimeout = originalSetTimeout;
+          jest.useFakeTimers();
+        }
+      });
     });
 
     describe('executeDeleteRequest', () => {
