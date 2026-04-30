@@ -748,6 +748,133 @@ describe('self-service', () => {
         ).toBeGreaterThan(facetCallsBeforeSync);
       });
     });
+
+    it('should show controller warning when autocomplete fails with "Controller is absent" message', async () => {
+      const entityRefs = ['component:default/e1'];
+      const tags = ['tag1'];
+      mockCatalogApi.getEntityFacets.mockResolvedValue(
+        facetsFromEntityRefs(entityRefs, tags),
+      );
+
+      const absentError = Object.assign(new Error('request failed'), {
+        body: {
+          error: {
+            message: 'Controller is absent in provided AAP Instance',
+          },
+        },
+      });
+      (mockScaffolderApi.autocomplete as jest.Mock).mockRejectedValue(
+        absentError,
+      );
+
+      await render(<HomeComponent />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Controller is absent in provided AAP Instance'),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should show controller warning when autocomplete fails with "Controller is not reachable" message', async () => {
+      const entityRefs = ['component:default/e1'];
+      const tags = ['tag1'];
+      mockCatalogApi.getEntityFacets.mockResolvedValue(
+        facetsFromEntityRefs(entityRefs, tags),
+      );
+
+      const unreachableError = Object.assign(new Error('request failed'), {
+        body: {
+          error: {
+            message: 'Controller is not reachable in provided AAP Instance',
+          },
+        },
+      });
+      (mockScaffolderApi.autocomplete as jest.Mock).mockRejectedValue(
+        unreachableError,
+      );
+
+      await render(<HomeComponent />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Controller is not reachable in provided AAP Instance',
+          ),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should show generic warning when autocomplete fails with a non-controller Error', async () => {
+      const entityRefs = ['component:default/e1'];
+      const tags = ['tag1'];
+      mockCatalogApi.getEntityFacets.mockResolvedValue(
+        facetsFromEntityRefs(entityRefs, tags),
+      );
+
+      (mockScaffolderApi.autocomplete as jest.Mock).mockRejectedValue(
+        new Error('Something went wrong'),
+      );
+
+      await render(<HomeComponent />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Failed to load job templates from Automation Controller.',
+          ),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should show generic warning when autocomplete rejects with a non-Error value', async () => {
+      const entityRefs = ['component:default/e1'];
+      const tags = ['tag1'];
+      mockCatalogApi.getEntityFacets.mockResolvedValue(
+        facetsFromEntityRefs(entityRefs, tags),
+      );
+
+      (mockScaffolderApi.autocomplete as jest.Mock).mockRejectedValue(
+        'unexpected string error',
+      );
+
+      await render(<HomeComponent />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Failed to load job templates from Automation Controller.',
+          ),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should extract message from error.body.error.message when available', async () => {
+      const entityRefs = ['component:default/e1'];
+      const tags = ['tag1'];
+      mockCatalogApi.getEntityFacets.mockResolvedValue(
+        facetsFromEntityRefs(entityRefs, tags),
+      );
+
+      const structuredError = Object.assign(new Error('wrapped'), {
+        body: {
+          error: {
+            message: 'Controller is absent in provided AAP Instance',
+          },
+        },
+      });
+      (mockScaffolderApi.autocomplete as jest.Mock).mockRejectedValue(
+        structuredError,
+      );
+
+      await render(<HomeComponent />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Controller is absent in provided AAP Instance'),
+        ).toBeInTheDocument();
+      });
+    });
   });
 
   describe('HomeTagPicker', () => {

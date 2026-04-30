@@ -1,5 +1,9 @@
 import { ConfigReader } from '@backstage/config';
-import { InputError, ServiceUnavailableError } from '@backstage/errors';
+import {
+  InputError,
+  NotAllowedError,
+  ServiceUnavailableError,
+} from '@backstage/errors';
 import { handleAutocompleteRequest } from './autocomplete';
 import { mockAnsibleService } from '../actions/mockIAAPService';
 import { mockServices } from '@backstage/backend-test-utils';
@@ -513,5 +517,65 @@ describe('ansible-aap:autocomplete', () => {
     expect(
       mockAnsibleService.checkControllerAvailability,
     ).not.toHaveBeenCalled();
+  });
+
+  it('should throw NotAllowedError when error message includes "Insufficient privileges"', async () => {
+    mockAnsibleService.getResourceData.mockRejectedValue(
+      new Error('Insufficient privileges'),
+    );
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'organizations',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow(NotAllowedError);
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'organizations',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow('Insufficient privileges');
+  });
+
+  it('should use fallback message when error is not an Error instance', async () => {
+    mockAnsibleService.getResourceData.mockRejectedValue(
+      'some non-error string',
+    );
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'organizations',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow(InputError);
+
+    await expect(
+      handleAutocompleteRequest({
+        resource: 'organizations',
+        token: 'token',
+        config,
+        logger,
+        ansibleService: mockAnsibleService,
+        auth: mockAuthService,
+        discovery: mockDiscoveryService,
+      }),
+    ).rejects.toThrow('Failed to fetch data');
   });
 });

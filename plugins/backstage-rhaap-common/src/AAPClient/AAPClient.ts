@@ -861,13 +861,7 @@ export class AAPClient implements IAAPService {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         const response = await this.executeGetRequest(endpoint, token);
-
-        let data;
-        try {
-          data = await response.json();
-        } catch (parseError) {
-          throw new Error('Failed to parse response data as JSON');
-        }
+        const data = await response.json();
 
         if (data?.count > 0) {
           return;
@@ -878,11 +872,12 @@ export class AAPClient implements IAAPService {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
 
-        if (errorMessage === 'Controller is absent in provided AAP Instance') {
-          throw error;
-        }
+        const isAbsent = errorMessage.includes(
+          'Controller is absent in provided AAP Instance',
+        );
+        const isUnauthorized = errorMessage.includes('Insufficient privileges');
 
-        if (errorMessage.includes('Insufficient privileges')) {
+        if (isAbsent || isUnauthorized) {
           throw error;
         }
 
@@ -893,6 +888,9 @@ export class AAPClient implements IAAPService {
         }
 
         const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        this.logger.warn(
+          `[${this.pluginLogName}]: Controller availability check attempt ${attempt}/${MAX_RETRIES} failed: ${errorMessage}. Retrying in ${delay}ms`,
+        );
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

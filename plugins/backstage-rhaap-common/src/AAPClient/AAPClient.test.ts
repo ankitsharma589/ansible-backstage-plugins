@@ -584,6 +584,46 @@ describe('AAPClient', () => {
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
       });
+
+      it('should not retry when error includes "Insufficient privileges"', async () => {
+        mockFetch.mockRejectedValue(new Error('Insufficient privileges'));
+
+        await expect(
+          client.checkControllerAvailability('test-token'),
+        ).rejects.toThrow('Insufficient privileges');
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+
+      it('should log a warning on each retry attempt before succeeding', async () => {
+        jest.useRealTimers();
+        mockFetch
+          .mockRejectedValueOnce(new Error('Temporary network failure'))
+          .mockResolvedValueOnce({
+            ok: true,
+            json: jest.fn().mockResolvedValue({ count: 1, results: [{}] }),
+          });
+
+        const originalSetTimeout = globalThis.setTimeout;
+        globalThis.setTimeout = ((fn: () => void) =>
+          originalSetTimeout(fn, 0)) as any;
+
+        try {
+          await expect(
+            client.checkControllerAvailability('test-token'),
+          ).resolves.toBeUndefined();
+
+          expect(mockFetch).toHaveBeenCalledTimes(2);
+          expect(mockLogger.warn).toHaveBeenCalledWith(
+            expect.stringContaining(
+              'Controller availability check attempt 1/4 failed: Failed to send fetch data: Temporary network failure',
+            ),
+          );
+        } finally {
+          globalThis.setTimeout = originalSetTimeout;
+          jest.useFakeTimers();
+        }
+      });
     });
 
     describe('executeDeleteRequest', () => {
