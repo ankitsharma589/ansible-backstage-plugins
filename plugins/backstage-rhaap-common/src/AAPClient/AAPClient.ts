@@ -858,6 +858,16 @@ export class AAPClient implements IAAPService {
     return await response.json();
   }
 
+  private extractErrorMessage(error: unknown, timeoutMs: number): string {
+    if ((error as { name?: string })?.name === 'AbortError') {
+      return `Request timed out after ${timeoutMs}ms`;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
+  }
+
   public async checkControllerAvailability(token: string): Promise<void> {
     const MAX_RETRIES = 4;
     const BASE_DELAY_MS = 1000;
@@ -880,21 +890,21 @@ export class AAPClient implements IAAPService {
         const data = await response.json();
         clearTimeout(timer);
 
-        if (data?.count > 0) {
+        if (typeof data?.count === 'number' && data.count > 0) {
           return;
         }
-
-        throw new Error('Controller is absent in provided AAP Instance');
+        if (typeof data?.count === 'number' && data?.count === 0) {
+          throw new Error('Controller is absent in provided AAP Instance');
+        }
+        throw new Error(
+          'Controller availability check returned an unexpected payload',
+        );
       } catch (error) {
         clearTimeout(timer);
-        let errorMessage: string;
-        if (error?.name === 'AbortError') {
-          errorMessage = `Request timed out after ${ATTEMPT_TIMEOUT_MS}ms`;
-        } else if (error instanceof Error) {
-          errorMessage = error.message;
-        } else {
-          errorMessage = String(error);
-        }
+        const errorMessage = this.extractErrorMessage(
+          error,
+          ATTEMPT_TIMEOUT_MS,
+        );
 
         const isAbsent = errorMessage.includes(
           'Controller is absent in provided AAP Instance',
@@ -906,8 +916,11 @@ export class AAPClient implements IAAPService {
         }
 
         if (attempt === MAX_RETRIES) {
+          this.logger.error(
+            `[${this.pluginLogName}]: Controller availability check failed after ${MAX_RETRIES} attempts: ${errorMessage}`,
+          );
           throw new Error(
-            `Controller is not reachable in provided AAP Instance. Reason: ${errorMessage}`,
+            'Controller is not reachable in provided AAP Instance',
           );
         }
 

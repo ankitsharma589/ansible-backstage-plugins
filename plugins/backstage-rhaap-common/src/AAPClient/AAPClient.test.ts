@@ -535,16 +535,28 @@ describe('AAPClient', () => {
         }
       });
 
-      it('should retry on unexpected response shape and eventually fail', async () => {
+      it('should throw "Controller is not reachable in provided AAP Instance" after retries on unexpected response shape', async () => {
+        jest.useRealTimers();
         mockFetch.mockResolvedValue({
           ok: true,
           json: jest.fn().mockResolvedValue({}),
         });
 
-        await expect(
-          client.checkControllerAvailability('test-token'),
-        ).rejects.toThrow('Controller is absent in provided AAP Instance');
-        expect(mockFetch).toHaveBeenCalledTimes(1);
+        const originalSetTimeout = globalThis.setTimeout;
+        globalThis.setTimeout = ((fn: () => void) =>
+          originalSetTimeout(fn, 0)) as any;
+
+        try {
+          await expect(
+            client.checkControllerAvailability('test-token'),
+          ).rejects.toThrow(
+            'Controller is not reachable in provided AAP Instance',
+          );
+          expect(mockFetch).toHaveBeenCalledTimes(4);
+        } finally {
+          globalThis.setTimeout = originalSetTimeout;
+          jest.useFakeTimers();
+        }
       });
 
       it('should succeed on retry after transient failure', async () => {
