@@ -522,14 +522,25 @@ export async function resolveEntityAndRepo(
       eeFileName: resolved.eeFileName,
     };
   } catch (error) {
-    if (error instanceof ResponseError && error.response.status === 403) {
-      response.status(403).json({
-        error: 'Not allowed to read this entity with your credentials',
-      });
-      return undefined;
+    if (error instanceof ResponseError) {
+      const status = error.response.status;
+      if (status === 403) {
+        response.status(403).json({
+          error: 'Not allowed to read this entity with your credentials',
+          code: 'PERMISSION_DENIED',
+        });
+        return undefined;
+      }
+      if (status === 404) {
+        response.status(404).json({
+          error: `Entity '${entityRef}' not found in catalog`,
+          code: 'ENTITY_NOT_FOUND',
+        });
+        return undefined;
+      }
     }
     const msg = error instanceof Error ? error.message : String(error);
-    response.status(400).json({ error: msg });
+    response.status(400).json({ error: msg, code: 'INVALID_REQUEST' });
     return undefined;
   }
 }
@@ -596,6 +607,12 @@ export async function dispatchEeBuild(
     const clientErr = ghResp.status >= 400 && ghResp.status < 500;
     response.status(clientErr ? ghResp.status : 502).json({
       error: `GitHub workflow_dispatch failed: ${ghResp.bodyText || ghResp.statusText}`,
+      code: 'WORKFLOW_DISPATCH_FAILED',
+      details: {
+        status: ghResp.status,
+        owner: gh.owner,
+        repo: gh.repo,
+      },
     });
     return;
   }
