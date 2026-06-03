@@ -63,19 +63,21 @@ export function getGitHubIntegrationForHost(
   return getIntegrationForHost(config, 'github', host);
 }
 
-export function isGitHubHostAllowedForProxy(
+function isHostAllowedForProxy(
   config: Config,
+  provider: 'github' | 'gitlab',
   host: string,
 ): boolean {
-  if (host === 'github.com') {
+  const defaultHost = provider === 'github' ? 'github.com' : 'gitlab.com';
+  if (host === defaultHost) {
     return true;
   }
-  const arr = config.getOptionalConfigArray('integrations.github');
+  const arr = config.getOptionalConfigArray(`integrations.${provider}`);
   if (!arr?.length) {
     return false;
   }
   for (const c of arr) {
-    const h = c.getOptionalString('host') ?? 'github.com';
+    const h = c.getOptionalString('host') ?? defaultHost;
     if (h === host) {
       return true;
     }
@@ -83,24 +85,18 @@ export function isGitHubHostAllowedForProxy(
   return false;
 }
 
+export function isGitHubHostAllowedForProxy(
+  config: Config,
+  host: string,
+): boolean {
+  return isHostAllowedForProxy(config, 'github', host);
+}
+
 export function isGitLabHostAllowedForProxy(
   config: Config,
   host: string,
 ): boolean {
-  if (host === 'gitlab.com') {
-    return true;
-  }
-  const arr = config.getOptionalConfigArray('integrations.gitlab');
-  if (!arr?.length) {
-    return false;
-  }
-  for (const c of arr) {
-    const h = c.getOptionalString('host') ?? 'gitlab.com';
-    if (h === host) {
-      return true;
-    }
-  }
-  return false;
+  return isHostAllowedForProxy(config, 'gitlab', host);
 }
 
 export function isSafeHostname(host: string): boolean {
