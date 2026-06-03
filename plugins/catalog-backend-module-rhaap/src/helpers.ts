@@ -1149,7 +1149,14 @@ export async function fetchGitHubCIActivityData(
       },
     });
 
-    const data = (await fetchResponse.json()) as JsonValue;
+    const contentType = fetchResponse.headers.get('content-type') || '';
+    let data: JsonValue;
+
+    if (fetchResponse.status === 204 || !contentType.includes('application/json')) {
+      data = { workflow_runs: [], total_count: 0 } as unknown as JsonValue;
+    } else {
+      data = (await fetchResponse.json()) as JsonValue;
+    }
 
     if (!fetchResponse.ok) {
       logger.warn('[CI Activity] GitHub API returned non-OK', {
