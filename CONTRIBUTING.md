@@ -87,6 +87,15 @@ yarn start
 
 The application will be available at `http://localhost:3000`
 
+### Troubleshooting Setup
+
+| Problem | Solution |
+|---------|----------|
+| `yarn start` fails with port in use | Kill the process on port 3000: `lsof -ti:3000 \| xargs kill` |
+| Node version mismatch | Use `nvm install 20` and `nvm use 20` |
+| Dependencies fail to install | Delete `node_modules` and `.yarn/cache`, then re-run `./install-deps` |
+| TypeScript errors after checkout | Run `yarn tsc` to check, then `yarn build` to rebuild |
+
 ### IDE Setup
 
 **Recommended VS Code Extensions:**
